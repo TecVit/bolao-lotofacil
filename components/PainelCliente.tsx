@@ -5,7 +5,7 @@ import dynamic from "next/dynamic";
 export const PainelCliente = dynamic(() => import("./Painel").then((m) => m.Painel), {
   ssr: false,
   loading: () => (
-    <main className="mx-auto max-w-xl px-4 pt-6">
+    <main className="mx-auto max-w-xl px-4 pt-6 lg:max-w-6xl">
       <div className="h-[68px] animate-pulse rounded-[22px] bg-bola/70" style={{ marginTop: 72 }} />
       <div className="cartao mt-4 h-[520px] animate-pulse" />
     </main>

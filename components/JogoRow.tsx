@@ -1,10 +1,11 @@
 "use client";
 import { motion, useReducedMotion } from "motion/react";
-import { premiado } from "@/lib/conferir";
+import { premiado, type SituacaoPremio } from "@/lib/conferir";
 import { moeda } from "@/lib/concursos";
 
-export function JogoRow({ rotulo, jogo, dezenas, acertos, valor, chave }: {
-  rotulo: string; jogo: number[]; dezenas?: number[]; acertos: number; valor?: number; chave: string;
+export function JogoRow({ rotulo, jogo, dezenas, acertos, valor, situacao, chave }: {
+  rotulo: string; jogo: number[]; dezenas?: number[]; acertos: number; valor?: number;
+  situacao?: SituacaoPremio; chave: string;
 }) {
   const reduzir = useReducedMotion();
   const s = new Set(dezenas ?? []);
@@ -25,13 +26,14 @@ export function JogoRow({ rotulo, jogo, dezenas, acertos, valor, chave }: {
               ganhou ? "bg-roxo text-white" : "bg-bola text-texto-2"
             }`}
           >
-            {acertos} acertos{ganhou && valor ? ` · ${moeda(valor)}` : ""}
+            {acertos} acertos
+            {ganhou && (situacao === "apurando" ? " · valor em apuração" : valor ? ` · ${moeda(valor)}` : "")}
           </motion.span>
         ) : (
           <span className="text-[12px] text-texto-3">aguardando</span>
         )}
       </div>
-      <div className="grid grid-cols-[repeat(15,minmax(0,1fr))] gap-[3px] sm:gap-1">
+      <div className="grid grid-cols-[repeat(15,minmax(0,1fr))] gap-[3px] sm:gap-1.5">
         {jogo.slice(0, 15).map((d, i) => {
           const hit = s.has(d);
           return (
@@ -40,7 +42,7 @@ export function JogoRow({ rotulo, jogo, dezenas, acertos, valor, chave }: {
               initial={tem && hit && !reduzir ? { scale: 0.5 } : false}
               animate={{ scale: 1 }}
               transition={{ type: "spring", bounce: 0.3, duration: 0.4, delay: 0.25 + i * 0.02 }}
-              className={`grid aspect-square place-items-center rounded-full text-[10px] font-semibold tabular sm:text-[11px] ${
+              className={`grid aspect-square place-items-center rounded-full text-[10px] font-semibold tabular sm:text-[13px] lg:text-[14px] ${
                 hit ? "bg-roxo text-white" : tem ? "bg-bola text-texto-3" : "bg-bola text-texto-2"
               }`}
             >

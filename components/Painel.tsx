@@ -5,9 +5,10 @@ import { ConcursoNav } from "./ConcursoNav";
 import { Volante } from "./Volante";
 import { JogoRow } from "./JogoRow";
 import { ResumoSheet, type LinhaResumo } from "./ResumoSheet";
+import { Premiacao } from "./Premiacao";
 import type { Status } from "./tipos-ui";
 import { useResultados } from "@/lib/useResultados";
-import { acertos, premiado } from "@/lib/conferir";
+import { acertos, premiado, valorPremio } from "@/lib/conferir";
 import {
   brParaIso, concursos, dataPrevista, formatarData, hojeSP, horaSP, HORA_SORTEIO, moeda, CONCURSO_INICIAL, DATA_INICIAL,
 } from "@/lib/concursos";
@@ -50,19 +51,20 @@ export function Painel({ bilhetes }: Props) {
   const conferencia = (r?: Resultado) =>
     jogos.map((g) => {
       const a = acertos(g.jogo, r?.dezenas);
-      const valor = r?.premios.find((p) => p.acertos === a)?.valor ?? 0;
-      return { ...g, acertos: a, valor: premiado(a) ? valor : 0 };
+      const { valor, situacao } = valorPremio(r?.premios, a);
+      return { ...g, acertos: a, valor, situacao };
     });
 
   const linhas: LinhaResumo[] = concursos.map((n) => {
     const r = resultados.get(n);
-    if (!r) return { numero: n, premiados: 0, ganho: 0 };
+    if (!r) return { numero: n, premiados: 0, ganho: 0, apurando: 0 };
     const c = conferencia(r);
     return {
       numero: n,
       melhor: Math.max(...c.map((x) => x.acertos)),
       premiados: c.filter((x) => premiado(x.acertos)).length,
       ganho: c.reduce((s, x) => s + x.valor, 0),
+      apurando: c.filter((x) => x.situacao === "apurando").length,
     };
   });
 
@@ -104,6 +106,8 @@ export function Painel({ bilhetes }: Props) {
   const conf = conferencia(r);
   const melhor = r ? Math.max(...conf.map((x) => x.acertos)) : undefined;
   const ganho = conf.reduce((s, x) => s + x.valor, 0);
+  const apurando = conf.filter((x) => x.situacao === "apurando").length;
+  const semRateio = conf.some((x) => x.situacao === "fixo" || x.situacao === "apurando");
   const exemplo = bilhetes.some((b) => b.exemplo);
 
   const itensNav = concursos.map((n) => ({
@@ -120,8 +124,8 @@ export function Painel({ bilhetes }: Props) {
   }
 
   return (
-    <main className="mx-auto w-full max-w-5xl px-4 pt-[max(env(safe-area-inset-top),12px)] pb-32">
-      <header className="mx-auto mb-3 flex max-w-xl items-end justify-between px-1 pt-3">
+    <main className="mx-auto w-full max-w-6xl px-4 pt-[max(env(safe-area-inset-top),12px)] pb-32">
+      <header className="mx-auto mb-3 flex max-w-xl items-end lg:max-w-none justify-between px-1 pt-3">
         <div>
           <p className="legenda text-[13px] font-semibold text-roxo">Lotofácil</p>
           <h1 className="display text-[34px] font-bold">Bolão</h1>
@@ -137,12 +141,12 @@ export function Painel({ bilhetes }: Props) {
       <ConcursoNav itens={itensNav} indice={indice} onMudar={irPara} />
 
       {exemplo && (
-        <p className="mx-auto mt-3 max-w-xl rounded-xl bg-ouro/15 px-3 py-2 text-center text-[12px] font-medium text-texto-2">
+        <p className="mx-auto mt-3 max-w-xl rounded-xl lg:max-w-none bg-ouro/15 px-3 py-2 text-center text-[12px] font-medium text-texto-2">
           Bilhetes de exemplo — substitua em <code>data/bilhetes/</code>
         </p>
       )}
 
-      <div className="relative mt-4 lg:grid lg:grid-cols-[minmax(0,420px)_1fr] lg:items-start lg:gap-6">
+      <div className="relative mt-4 lg:grid lg:grid-cols-[minmax(0,400px)_1fr] lg:items-start lg:gap-6">
         <AnimatePresence mode="popLayout" initial={false} custom={dir}>
           <motion.section
             key={numero}
@@ -183,10 +187,22 @@ export function Painel({ bilhetes }: Props) {
                 <div className="mt-4 grid grid-cols-3 gap-2 text-center">
                   <Mini valor={`${melhor}`} rotulo="melhor jogo" destaque={(melhor ?? 0) >= 11} />
                   <Mini valor={`${conf.filter((x) => premiado(x.acertos)).length}`} rotulo="premiados" />
-                  <Mini valor={ganho ? moeda(ganho) : "—"} rotulo="ganho" />
+                  <Mini valor={ganho ? `${moeda(ganho)}${apurando ? " +" : ""}` : apurando ? "Apurando" : "—"}
+                    rotulo={apurando ? "ganho + a apurar" : "ganho"} />
                 </div>
               ) : (
                 <Espera status={status} numero={numero} estado={estado} hora={hoje.hora} />
+              )}
+              {r && semRateio && (
+                <p className="mt-2 flex items-start gap-1.5 rounded-xl bg-ouro/15 px-3 py-2 text-[12px] text-texto-2">
+                  <span className="pulso mt-1 size-1.5 shrink-0 rounded-full bg-ouro" />
+                  <span>
+                    A Caixa ainda não publicou o rateio.
+                    {apurando
+                      ? " O valor de 14/15 acertos depende do número de ganhadores e entra aqui assim que sair."
+                      : " Os valores de 11 a 13 acertos são fixos, então já estão garantidos."}
+                  </span>
+                </p>
               )}
               {r && (
                 <p className="mt-4 text-[11px] text-texto-3 tabular">
@@ -202,21 +218,32 @@ export function Painel({ bilhetes }: Props) {
           </motion.section>
         </AnimatePresence>
 
-        <section className="mx-auto mt-6 max-w-xl lg:mt-0 lg:max-w-none">
+        <section className="mx-auto mt-6 w-full max-w-xl lg:mx-0 lg:mt-0 lg:max-w-none">
           <h3 className="titulo mb-2 px-1 text-[20px] font-bold">Nossos jogos</h3>
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
+          <div className="grid gap-3">
             {bilhetes.map((b) => (
               <div key={b.id} className="cartao p-2">
                 <p className="legenda px-3 pt-2 pb-1 text-[13px] font-bold">{b.nome}</p>
                 {conf.filter((c) => c.bilhete.id === b.id).map((c) => (
                   <JogoRow key={c.idx} rotulo={`Jogo ${"ABC"[c.idx] ?? c.idx + 1}`} jogo={c.jogo} dezenas={r?.dezenas}
-                    acertos={c.acertos} valor={c.valor} chave={`${numero}-${r ? 1 : 0}`} />
+                    acertos={c.acertos} valor={c.valor} situacao={c.situacao} chave={`${numero}-${r ? 1 : 0}`} />
                 ))}
               </div>
             ))}
           </div>
         </section>
       </div>
+
+      {r && (
+        <Premiacao
+          r={r}
+          estimativa={resultados.get(numero - 1)?.estimativaProximo}
+          nossos={conf.reduce<Record<number, number>>((m, c) => {
+            if (premiado(c.acertos)) m[c.acertos] = (m[c.acertos] ?? 0) + 1;
+            return m;
+          }, {})}
+        />
+      )}
 
       <div className="pointer-events-none fixed inset-x-0 bottom-0 z-30 flex justify-center gap-2 px-4 pb-[max(env(safe-area-inset-bottom),16px)]">
         {indice !== concursos.indexOf(atual) && (

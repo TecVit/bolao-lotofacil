@@ -1,12 +1,21 @@
 import "server-only";
-import { buscarConcurso } from "./fontes";
+import { buscarConcurso, buscarUltimo } from "./fontes";
 import { concursos, jaSorteado } from "./concursos";
 import { lerEstado, lerResultados, marcarVerificacao, salvarEstado, salvarResultado } from "./store";
 import type { Resultado } from "./tipos";
 
 let emAndamento: Promise<SyncInfo> | null = null;
 
-export type SyncInfo = { gravados: number[]; pendentes: number[]; erros: string[]; ms: number };
+export type SyncInfo = {
+  gravados: number[];
+  pendentes: number[];
+  /** fonte usada para o último resultado */
+  fonte: string | null;
+  /** fontes que falharam nesta execução (mesmo que outra tenha respondido) */
+  avisos: string[];
+  erros: string[];
+  ms: number;
+};
 
 /**
  * Busca o último concurso (pega o de hoje + estado do próximo) e
@@ -21,7 +30,7 @@ async function executar(): Promise<SyncInfo> {
   const t0 = Date.now();
   const [salvos, estado] = await Promise.all([lerResultados(), lerEstado()]);
   const porNumero = new Map(salvos.map((r) => [r.numero, r]));
-  const info: SyncInfo = { gravados: [], pendentes: [], erros: [], ms: 0 };
+  const info: SyncInfo = { gravados: [], pendentes: [], fonte: null, avisos: [], erros: [], ms: 0 };
 
   const gravar = async (r: Resultado) => {
     if (!concursos.includes(r.numero)) return;
@@ -34,8 +43,9 @@ async function executar(): Promise<SyncInfo> {
   // 1) último (é o que muda à noite)
   let fonte: string | null = null;
   try {
-    const b = await buscarConcurso();
-    fonte = b.resultado.fonte;
+    const { melhor: b, erros } = await buscarUltimo();
+    info.avisos.push(...erros);
+    fonte = info.fonte = b.resultado.fonte;
     await gravar(b.resultado);
     if (b.estado) await salvarEstado(b.estado, estado);
   } catch (e) {
@@ -43,7 +53,10 @@ async function executar(): Promise<SyncInfo> {
   }
 
   // 2) buracos do bolão (concursos passados que faltam)
-  const faltando = concursos.filter((n) => jaSorteado(n) && !porNumero.has(n));
+  // (ou incompletos: sem rateio publicado / sem arrecadação)
+  const incompleto = (r?: Resultado) =>
+    !r || r.arrecadado === undefined || !r.premios.some((p) => p.valor > 0);
+  const faltando = concursos.filter((n) => jaSorteado(n) && incompleto(porNumero.get(n)));
   await Promise.all(
     faltando.map(async (n) => {
       try {

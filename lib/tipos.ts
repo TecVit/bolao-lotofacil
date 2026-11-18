@@ -6,6 +6,10 @@ export type Resultado = {
   acumulado: boolean;
   premios: { faixa: number; acertos: number; ganhadores: number; valor: number }[];
   local?: string;
+  /** total arrecadado no concurso */
+  arrecadado?: number;
+  /** estimativa de prêmio (15 acertos) para o concurso seguinte */
+  estimativaProximo?: number;
   fonte: "caixa" | "loteriascaixa-api" | "guidi";
   atualizadoEm: number;
   /** quando entrou no bolão pela primeira vez (não muda em correções) */

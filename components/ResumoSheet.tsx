@@ -4,7 +4,7 @@ import { AnimatePresence, motion, useReducedMotion, type PanInfo } from "motion/
 import { projetar } from "@/lib/fisica";
 import { moeda } from "@/lib/concursos";
 
-export type LinhaResumo = { numero: number; melhor?: number; premiados: number; ganho: number };
+export type LinhaResumo = { numero: number; melhor?: number; premiados: number; ganho: number; apurando: number };
 
 export function ResumoSheet({ aberto, onFechar, linhas, onIr, investido }: {
   aberto: boolean; onFechar: () => void; linhas: LinhaResumo[]; onIr: (numero: number) => void; investido: number;
@@ -12,6 +12,7 @@ export function ResumoSheet({ aberto, onFechar, linhas, onIr, investido }: {
   const reduzir = useReducedMotion();
   const feitos = linhas.filter((l) => l.melhor !== undefined);
   const total = feitos.reduce((s, l) => s + l.ganho, 0);
+  const apurando = feitos.reduce((s, l) => s + l.apurando, 0);
   const premiados = feitos.reduce((s, l) => s + l.premiados, 0);
   const recorde = Math.max(0, ...feitos.map((l) => l.melhor ?? 0));
   const saldo = total - investido;
@@ -78,6 +79,9 @@ export function ResumoSheet({ aberto, onFechar, linhas, onIr, investido }: {
                   <div>
                     <div className="text-[11px] text-texto-2">Ganho</div>
                     <div className="titulo tabular text-[17px] font-bold text-roxo">{moeda(total)}</div>
+                    {apurando > 0 && (
+                      <div className="text-[11px] text-texto-2">+ {apurando} prêmio{apurando > 1 ? "s" : ""} em apuração</div>
+                    )}
                   </div>
                 </div>
               </div>

@@ -32,6 +32,8 @@ function deFormatoCaixa(d: any, fonte: Resultado["fonte"]): Bruto {
         faixa: p.faixa, acertos: 16 - p.faixa, ganhadores: p.numeroDeGanhadores, valor: p.valorPremio,
       })),
       local: d.localSorteio ? [d.localSorteio, d.nomeMunicipioUFSorteio].filter(Boolean).join(" em ") : undefined,
+      arrecadado: d.valorArrecadado ?? undefined,
+      estimativaProximo: d.valorEstimadoProximoConcurso ?? undefined,
       fonte,
       atualizadoEm: agora,
     },
@@ -61,6 +63,8 @@ function deLoteriasCaixaApi(d: any): Bruto {
         faixa: p.faixa, acertos: 16 - p.faixa, ganhadores: p.ganhadores, valor: p.valorPremio,
       })),
       local: d.local,
+      arrecadado: d.valorArrecadado ?? undefined,
+      estimativaProximo: d.valorEstimadoProximoConcurso ?? undefined,
       fonte: "loteriascaixa-api",
       atualizadoEm: agora,
     },
@@ -90,6 +94,30 @@ const fontes: { nome: string; buscar: (n?: number) => Promise<Bruto> }[] = [
     buscar: async (n) => deFormatoCaixa(await getJson(`https://api.guidi.dev.br/loteria/lotofacil/${n ?? "ultimo"}`), "guidi"),
   },
 ];
+
+const rateioCompleto = (b: Bruto) => b.resultado.premios.some((p) => p.acertos === 14 && p.valor > 0);
+
+/**
+ * Último resultado: consulta TODAS as fontes em paralelo e fica com a que tem
+ * o concurso mais novo (empate → rateio publicado → ordem Caixa, comunitárias).
+ * Assim a velocidade é a da fonte mais rápida que já tem o resultado.
+ */
+export async function buscarUltimo(): Promise<{ melhor: Bruto; erros: string[] }> {
+  const res = await Promise.allSettled(fontes.map((f) => f.buscar()));
+  const erros: string[] = [];
+  let melhor: Bruto | null = null;
+  res.forEach((r, i) => {
+    if (r.status === "rejected") { erros.push(`${fontes[i].nome}: ${(r.reason as Error).message}`); return; }
+    const b = r.value;
+    if (
+      !melhor ||
+      b.resultado.numero > melhor.resultado.numero ||
+      (b.resultado.numero === melhor.resultado.numero && rateioCompleto(b) && !rateioCompleto(melhor))
+    ) melhor = b;
+  });
+  if (!melhor) throw new Error(erros.join(" | "));
+  return { melhor, erros };
+}
 
 /** Busca um concurso (ou o último, sem número) tentando Caixa → comunitárias. */
 export async function buscarConcurso(n?: number): Promise<Bruto> {

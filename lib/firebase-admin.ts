@@ -11,5 +11,7 @@ export function adminDb(): Firestore | null {
   if (!raw) return (db = null);
   const sa = JSON.parse(raw.trim().startsWith("{") ? raw : Buffer.from(raw, "base64").toString("utf8"));
   const app = getApps()[0] ?? initializeApp({ credential: cert(sa) });
-  return (db = getFirestore(app));
+  db = getFirestore(app);
+  try { db.settings({ ignoreUndefinedProperties: true }); } catch { /* já configurado */ }
+  return db;
 }

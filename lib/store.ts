@@ -23,7 +23,8 @@ export async function lerEstado(): Promise<Estado | null> {
 
 const igual = (a?: Resultado, b?: Resultado) =>
   !!a && !!b && a.dezenas.join() === b.dezenas.join() &&
-  JSON.stringify(a.premios) === JSON.stringify(b.premios) && a.acumulado === b.acumulado;
+  JSON.stringify(a.premios) === JSON.stringify(b.premios) && a.acumulado === b.acumulado &&
+  a.arrecadado === b.arrecadado && a.estimativaProximo === b.estimativaProximo;
 
 /** Grava só se mudou. Retorna true se escreveu. */
 export async function salvarResultado(r: Resultado, atual?: Resultado): Promise<boolean> {

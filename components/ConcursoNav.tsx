@@ -85,7 +85,7 @@ export function ConcursoNav({
   }
 
   return (
-    <div className="material sticky top-[max(env(safe-area-inset-top),8px)] z-30 mx-auto max-w-xl rounded-[22px] py-2 shadow-[var(--sombra)]">
+    <div className="material sticky top-[max(env(safe-area-inset-top),8px)] z-30 mx-auto max-w-xl lg:max-w-none rounded-[22px] py-2 shadow-[var(--sombra)]">
       <div
         ref={trilho}
         className="relative h-[68px] overflow-hidden select-none touch-pan-y [mask-image:linear-gradient(90deg,transparent,#000_14%,#000_86%,transparent)]"
