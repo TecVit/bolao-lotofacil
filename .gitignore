@@ -39,3 +39,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# fotos dos bilhetes (recibo ao portador — não publicar)
+/data/fotos/
