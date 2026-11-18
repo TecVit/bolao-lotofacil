@@ -1,5 +1,6 @@
 import "server-only";
 import { buscarConcurso, buscarUltimo } from "./fontes";
+import { resultadoCompleto } from "./completo";
 import { concursos, jaSorteado } from "./concursos";
 import { lerEstado, lerResultados, marcarVerificacao, salvarEstado, salvarResultado } from "./store";
 import type { Resultado } from "./tipos";
@@ -53,10 +54,9 @@ async function executar(): Promise<SyncInfo> {
   }
 
   // 2) buracos do bolão (concursos passados que faltam)
-  // (ou incompletos: sem rateio publicado / sem arrecadação)
-  const incompleto = (r?: Resultado) =>
-    !r || r.arrecadado === undefined || !r.premios.some((p) => p.valor > 0);
-  const faltando = concursos.filter((n) => jaSorteado(n) && incompleto(porNumero.get(n)));
+  // ou incompletos (sem rateio de alguma faixa / sem arrecadação). Se a busca
+  // falhar, continua incompleto e é tentado de novo na próxima execução.
+  const faltando = concursos.filter((n) => jaSorteado(n) && !resultadoCompleto(porNumero.get(n)));
   await Promise.all(
     faltando.map(async (n) => {
       try {

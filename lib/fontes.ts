@@ -81,10 +81,14 @@ function deLoteriasCaixaApi(d: any): Bruto {
 }
 /* eslint-enable @typescript-eslint/no-explicit-any */
 
-const CAIXA = process.env.CAIXA_API_URL ?? "https://servicebus2.caixa.gov.br/portaldeloterias/api/lotofacil";
+// O site oficial (loterias.caixa.gov.br) lê a base da API em /Style Library/json/params.txt
+// → hoje "servicebus3". O servicebus2 (antigo) ainda responde igual e fica como reserva.
+const CAIXA = process.env.CAIXA_API_URL ?? "https://servicebus3.caixa.gov.br/portaldeloterias/api/lotofacil";
+const CAIXA_ANTIGA = "https://servicebus2.caixa.gov.br/portaldeloterias/api/lotofacil";
 
 const fontes: { nome: string; buscar: (n?: number) => Promise<Bruto> }[] = [
   { nome: "caixa", buscar: async (n) => deFormatoCaixa(await getJson(n ? `${CAIXA}/${n}` : CAIXA), "caixa") },
+  { nome: "caixa-sb2", buscar: async (n) => deFormatoCaixa(await getJson(n ? `${CAIXA_ANTIGA}/${n}` : CAIXA_ANTIGA), "caixa") },
   {
     nome: "loteriascaixa-api",
     buscar: async (n) => deLoteriasCaixaApi(await getJson(`https://loteriascaixa-api.herokuapp.com/api/lotofacil/${n ?? "latest"}`)),
