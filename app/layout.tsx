@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
+import { Trevo } from "@/components/Trevo";
 
 export const metadata: Metadata = {
   title: "Bolão Lotofácil",
@@ -27,7 +28,12 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <script dangerouslySetInnerHTML={{ __html: scriptTema }} />
       </head>
       <body className="min-h-full">
-        <div className="aurora" aria-hidden />
+        <div className="aurora trevos-fundo" aria-hidden>
+          <Trevo className="-left-24 -top-20 size-72 rotate-[-20deg] text-roxo lg:size-96" />
+          <Trevo className="-right-28 top-[38%] size-80 rotate-[25deg] text-[#ff6fb5] lg:size-[28rem]" />
+          <Trevo className="-bottom-24 -left-16 size-64 rotate-[10deg] text-roxo-claro lg:size-80" />
+          <Trevo className="right-[12%] -bottom-10 hidden size-40 rotate-[-35deg] text-roxo lg:block" />
+        </div>
         {children}
       </body>
     </html>

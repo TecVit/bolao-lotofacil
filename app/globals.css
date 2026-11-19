@@ -17,6 +17,7 @@
   --material: rgba(255, 255, 255, 0.72);
   --material-borda: rgba(255, 255, 255, 0.6);
   --bola-neutra: #ece6ef;
+  --trevo-fundo: 0.06; /* opacidade dos trevos do fundo */
   --sombra: 0 1px 2px rgba(60, 10, 70, 0.04), 0 8px 24px rgba(60, 10, 70, 0.06);
   --sombra-forte: 0 2px 6px rgba(60, 10, 70, 0.06), 0 24px 60px rgba(60, 10, 70, 0.14);
   color-scheme: light;
@@ -38,6 +39,7 @@
     --material: rgba(30, 22, 36, 0.7);
     --material-borda: rgba(255, 255, 255, 0.08);
     --bola-neutra: #2a2130;
+  --trevo-fundo: 0.09;
     --sombra: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px rgba(0, 0, 0, 0.25);
     --sombra-forte: 0 2px 6px rgba(0, 0, 0, 0.4), 0 24px 60px rgba(0, 0, 0, 0.5);
     color-scheme: dark;
@@ -57,6 +59,7 @@
   --material: rgba(30, 22, 36, 0.7);
   --material-borda: rgba(255, 255, 255, 0.08);
   --bola-neutra: #2a2130;
+  --trevo-fundo: 0.09;
   --sombra: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px rgba(0, 0, 0, 0.25);
   --sombra-forte: 0 2px 6px rgba(0, 0, 0, 0.4), 0 24px 60px rgba(0, 0, 0, 0.5);
   color-scheme: dark;
@@ -116,7 +119,11 @@ body {
     radial-gradient(60% 40% at 50% -5%, color-mix(in srgb, var(--roxo) 28%, transparent), transparent 70%),
     radial-gradient(40% 30% at 100% 10%, color-mix(in srgb, var(--roxo-claro) 16%, transparent), transparent 70%),
     var(--bg);
+  overflow: hidden;
 }
+
+/* Trevos grandes e parados no fundo, cortados pelas bordas da tela */
+.trevos-fundo > svg { position: absolute; opacity: var(--trevo-fundo); }
 
 .pulso { animation: pulso 1.6s ease-in-out infinite; }
 @keyframes pulso { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: .35; transform: scale(.8); } }

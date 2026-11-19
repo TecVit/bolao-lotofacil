@@ -2,6 +2,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion, type PanInfo } from "motion/react";
 import { ConcursoNav, type ItemNav } from "./ConcursoNav";
+import { Trevo } from "./Trevo";
 import { Volante } from "./Volante";
 import { JogoRow } from "./JogoRow";
 import { ResumoSheet, type LinhaResumo } from "./ResumoSheet";
@@ -151,7 +152,7 @@ export function Painel({ bilhetes }: Props) {
     <main className="mx-auto w-full max-w-6xl px-4 pt-[max(env(safe-area-inset-top),12px)] pb-32">
       <header className="mx-auto mb-3 flex max-w-xl items-end lg:max-w-none justify-between px-1 pt-3">
         <div>
-          <p className="legenda text-[13px] font-semibold text-roxo">Lotofácil</p>
+          <p className="legenda flex items-center gap-1 text-[13px] font-semibold text-roxo"><Trevo className="size-4" />Lotofácil</p>
           <h1 className="display text-[34px] font-bold">Bolão</h1>
         </div>
         <div className="mb-1 flex items-center gap-1.5 text-[12px] text-texto-2">
@@ -193,8 +194,9 @@ export function Painel({ bilhetes }: Props) {
               dragTransition={{ bounceStiffness: 400, bounceDamping: 40 }}
               onDragEnd={soltarCard}
               style={{ touchAction: "pan-y" }}
-              className="cartao p-5"
+              className="cartao relative isolate overflow-hidden p-5"
             >
+              <TrevosCard chave={numero} />
               <div className="mb-4 flex items-start justify-between gap-3">
                 <div>
                   <p className="legenda text-[13px] font-medium text-texto-2 first-letter:uppercase">
@@ -299,10 +301,16 @@ export function Painel({ bilhetes }: Props) {
             Hoje
           </motion.button>
         )}
-        <button onClick={() => setResumo(true)}
-          className="pressionavel pointer-events-auto rounded-full bg-roxo px-5 py-3 text-[15px] font-semibold text-white shadow-[0_10px_30px_color-mix(in_srgb,var(--roxo)_45%,transparent)]">
-          Resumo do bolão
-        </button>
+        {/* pílula de vidro com borda em degradê roxo→dourado (mesmo design da nav do bolão Mega) */}
+        <div className="pointer-events-auto rounded-full bg-gradient-to-r from-roxo/60 via-white/30 to-ouro/60 p-px shadow-[0_18px_40px_-12px_color-mix(in_srgb,var(--roxo-escuro)_55%,transparent),0_2px_8px_rgba(0,0,0,.12)]">
+          <div className="material flex rounded-full !border-0 p-1.5">
+            <button onClick={() => { vibrar(6); setResumo(true); }}
+              className="pressionavel relative flex min-w-[118px] items-center justify-center gap-2 rounded-full bg-gradient-to-b from-roxo-claro to-roxo px-5 py-3 text-[14px] font-semibold text-white shadow-[inset_0_1px_0_rgba(255,255,255,.35),0_8px_22px_-6px_color-mix(in_srgb,var(--roxo)_70%,transparent)]">
+              <IconeResumo />
+              Resumo do bolão
+            </button>
+          </div>
+        </div>
       </div>
 
       <ResumoSheet aberto={resumo} onFechar={() => setResumo(false)} linhas={linhas}
@@ -385,4 +393,35 @@ function useHoje() {
     return () => clearInterval(id);
   }, []);
   return agora;
+}
+
+function IconeResumo() {
+  return (
+    <svg viewBox="0 0 24 24" className="size-[18px]" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <path d="M4 20V10M10 20V4M16 20v-7M22 20H2" />
+    </svg>
+  );
+}
+
+/** Trevos decorativos do cartão (roxo/rosa): um grande e suave no canto, pequenos perto do selo. */
+function TrevosCard({ chave }: { chave: number }) {
+  const reduzir = useReducedMotion();
+  const trevos = [
+    { c: "-right-14 -bottom-16 size-64 text-roxo/[.06] sm:size-80", r: -18, d: 0.1 },
+    { c: "right-[22%] top-[10%] size-8 text-[#ff6fb5]/30 sm:size-10", r: 14, d: 0.25 },
+    { c: "right-[34%] top-[4%] size-5 text-roxo/25", r: 30, d: 0.35 },
+    { c: "right-[4%] top-[30%] size-6 text-roxo-claro/30 sm:size-7", r: -25, d: 0.45 },
+  ];
+  return (
+    <div className="pointer-events-none absolute inset-0 -z-10" aria-hidden>
+      {trevos.map((t, i) => (
+        <motion.div key={`${chave}-${i}`} className={`absolute ${t.c}`}
+          initial={reduzir ? { opacity: 0 } : { opacity: 0, scale: 0.6, rotate: t.r - 40 }}
+          animate={{ opacity: 1, scale: 1, rotate: t.r }}
+          transition={reduzir ? { duration: 0.3 } : { type: "spring", bounce: 0.2, duration: 0.9, delay: t.d }}>
+          <Trevo className="size-full" />
+        </motion.div>
+      ))}
+    </div>
+  );
 }
