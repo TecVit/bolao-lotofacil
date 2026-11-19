@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion, type PanInfo } from "motion/react";
-import { ConcursoNav } from "./ConcursoNav";
+import { ConcursoNav, type ItemNav } from "./ConcursoNav";
 import { Volante } from "./Volante";
 import { JogoRow } from "./JogoRow";
 import { ResumoSheet, type LinhaResumo } from "./ResumoSheet";
@@ -11,7 +11,7 @@ import type { Status } from "./tipos-ui";
 import { useResultados } from "@/lib/useResultados";
 import { acertos, premiado, valorPremio } from "@/lib/conferir";
 import {
-  brParaIso, concursos, dataPrevista, formatarData, hojeSP, horaSP, HORA_SORTEIO, moeda, CONCURSO_INICIAL, DATA_INICIAL,
+  brParaIso, concursos, dataPrevista, feriadosEntre, formatarData, hojeSP, horaSP, HORA_SORTEIO, moeda, CONCURSO_INICIAL, DATA_INICIAL,
 } from "@/lib/concursos";
 import { mola, projetar, vibrar } from "@/lib/fisica";
 import { comemorar, pararComemoracao } from "@/lib/comemorar";
@@ -123,12 +123,23 @@ export function Painel({ bilhetes }: Props) {
     return () => { clearTimeout(t); pararComemoracao(); };
   }, [numero, grandePremio, melhor]);
 
-  const itensNav = concursos.map((n) => ({
-    numero: n,
-    status: statusDe(n),
-    rotulo: dataDe(n) === hoje.data ? "hoje" : formatarData(dataDe(n), { weekday: "short" }),
-    melhor: linhas.find((l) => l.numero === n)?.melhor,
-  }));
+  // Concursos + feriados (sem sorteio) intercalados como chips desativados
+  const itensNav: ItemNav[] = concursos.flatMap((n, i) => {
+    const item: ItemNav = {
+      tipo: "concurso",
+      numero: n,
+      status: statusDe(n),
+      rotulo: dataDe(n) === hoje.data ? "hoje" : formatarData(dataDe(n), { weekday: "short" }),
+      melhor: linhas.find((l) => l.numero === n)?.melhor,
+    };
+    const feriados = i === 0 ? [] : feriadosEntre(dataDe(concursos[i - 1]), dataDe(n));
+    return [
+      ...feriados.map((iso): ItemNav => ({
+        tipo: "feriado", iso, rotulo: formatarData(iso, { weekday: "short" }), dia: formatarData(iso, { day: "2-digit", month: "2-digit" }),
+      })),
+      item,
+    ];
+  });
 
   function soltarCard(_: unknown, info: PanInfo) {
     const p = info.offset.x + projetar(info.velocity.x, 0.99);

@@ -5,6 +5,18 @@ export const CONCURSO_FINAL = CONCURSO_INICIAL + TOTAL_CONCURSOS - 1;
 export const DATA_INICIAL = process.env.NEXT_PUBLIC_DATA_INICIAL ?? "2026-11-16";
 export const HORA_SORTEIO = 20; // 20h de Brasília
 
+/** Feriados nacionais sem sorteio (yyyy-mm-dd). A Lotofácil corre de seg a sáb, exceto nestes dias. */
+export const FERIADOS: ReadonlySet<string> = new Set([
+  "2026-11-20", // Consciência Negra
+  "2026-12-25", // Natal
+  "2027-01-01", // Confraternização Universal
+]);
+
+/** Feriados estritamente entre duas datas (yyyy-mm-dd), em ordem. */
+export function feriadosEntre(inicioIso: string, fimIso: string): string[] {
+  return [...FERIADOS].filter((f) => f > inicioIso && f < fimIso).sort();
+}
+
 export const concursos = Array.from({ length: TOTAL_CONCURSOS }, (_, i) => CONCURSO_INICIAL + i);
 
 /** Data de hoje em Brasília como yyyy-mm-dd */
@@ -22,7 +34,7 @@ export function horaSP(agora = new Date()): number {
 }
 
 /**
- * Data prevista (yyyy-mm-dd) de um concurso: seg a sáb, pulando domingos,
+ * Data prevista (yyyy-mm-dd) de um concurso: seg a sáb, pulando domingos e feriados,
  * contando a partir de um concurso de data conhecida (âncora).
  */
 export function dataPrevista(numero: number, ancoraNum = CONCURSO_INICIAL, ancoraIso = DATA_INICIAL): string {
@@ -32,7 +44,7 @@ export function dataPrevista(numero: number, ancoraNum = CONCURSO_INICIAL, ancor
   const passo = faltam >= 0 ? 1 : -1;
   while (faltam !== 0) {
     dt.setUTCDate(dt.getUTCDate() + passo);
-    if (dt.getUTCDay() !== 0) faltam -= passo;
+    if (dt.getUTCDay() !== 0 && !FERIADOS.has(dt.toISOString().slice(0, 10))) faltam -= passo;
   }
   return dt.toISOString().slice(0, 10);
 }

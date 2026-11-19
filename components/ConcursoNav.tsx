@@ -7,8 +7,15 @@ import type { Status } from "./tipos-ui";
 const PASSO = 64; // largura do chip + gap
 const LARG = 56;
 
-type Item = { numero: number; status: Status; rotulo: string; melhor?: number };
+type ItemConcurso = { tipo: "concurso"; numero: number; status: Status; rotulo: string; melhor?: number };
+type ItemFeriado = { tipo: "feriado"; iso: string; rotulo: string; dia: string };
+export type ItemNav = ItemConcurso | ItemFeriado;
+type Item = ItemNav;
 
+/**
+ * `indice`/`onMudar` falam em índice de concurso; a trilha também mostra feriados
+ * (desativados), então convertemos concurso ↔ posição visual.
+ */
 export function ConcursoNav({
   itens, indice, onMudar,
 }: { itens: Item[]; indice: number; onMudar: (i: number) => void }) {
@@ -19,8 +26,10 @@ export function ConcursoNav({
   const arrasto = useRef<{ id: number; x0: number; p0: number; ativo: boolean; hist: { x: number; t: number }[] } | null>(null);
   const ultimoIdx = useRef(indice);
 
-  const alvo = (i: number) => largura / 2 - LARG / 2 - i * PASSO;
-  const min = alvo(itens.length - 1);
+  // posição visual de cada concurso (índice de concurso → índice na trilha)
+  const posicoes = itens.flatMap((it, p) => (it.tipo === "concurso" ? [p] : []));
+  const alvo = (i: number) => largura / 2 - LARG / 2 - (posicoes[i] ?? 0) * PASSO;
+  const min = alvo(posicoes.length - 1);
   const max = alvo(0);
 
   useLayoutEffect(() => {
@@ -42,8 +51,13 @@ export function ConcursoNav({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [indice, largura, reduzir]);
 
-  const indiceDe = (pos: number) =>
-    Math.max(0, Math.min(itens.length - 1, Math.round((largura / 2 - LARG / 2 - pos) / PASSO)));
+  // posição da trilha → concurso mais próximo (nunca para num feriado)
+  const indiceDe = (pos: number) => {
+    const v = (largura / 2 - LARG / 2 - pos) / PASSO;
+    let melhor = 0;
+    posicoes.forEach((p, i) => { if (Math.abs(p - v) < Math.abs(posicoes[melhor] - v)) melhor = i; });
+    return melhor;
+  };
 
   function onPointerDown(e: React.PointerEvent) {
     x.stop(); // interrompe a mola: começamos do valor apresentado
@@ -99,18 +113,46 @@ export function ConcursoNav({
         {/* janela do selecionado */}
         <div className="pointer-events-none absolute top-0 left-1/2 h-full w-[60px] -translate-x-1/2 rounded-2xl bg-roxo shadow-[0_6px_20px_color-mix(in_srgb,var(--roxo)_40%,transparent)]" />
         <motion.div className="absolute top-0 left-0 flex h-full" style={{ x, gap: PASSO - LARG }}>
-          {itens.map((it, i) => (
-            <Chip key={it.numero} item={it} i={i} x={x} centro={largura / 2 - LARG / 2}
-              ativo={i === indice} onClick={() => i !== indice && onMudar(i)} />
-          ))}
+          {itens.map((it, p) => {
+            if (it.tipo === "feriado")
+              return <ChipFeriado key={it.iso} item={it} i={p} x={x} centro={largura / 2 - LARG / 2} />;
+            const i = posicoes.indexOf(p);
+            return (
+              <Chip key={it.numero} item={it} i={p} x={x} centro={largura / 2 - LARG / 2}
+                ativo={i === indice} onClick={() => i !== indice && onMudar(i)} />
+            );
+          })}
         </motion.div>
       </div>
     </div>
   );
 }
 
+function ChipFeriado({ item, i, x, centro }: {
+  item: ItemFeriado; i: number; x: MotionValue<number>; centro: number;
+}) {
+  const dist = useTransform(x, (v) => Math.min(1, Math.abs(v + i * PASSO - centro) / (PASSO * 3)));
+  const scale = useTransform(dist, [0, 1], [0.9, 0.8]);
+  const opacity = useTransform(dist, [0, 1], [0.5, 0.3]);
+  return (
+    <motion.div
+      role="tab"
+      aria-disabled="true"
+      aria-selected={false}
+      aria-label={`Feriado ${item.dia}, sem sorteio`}
+      title={`Feriado ${item.dia} — sem sorteio`}
+      style={{ scale, opacity, width: LARG }}
+      className="pointer-events-none flex h-full shrink-0 flex-col items-center justify-center rounded-2xl border border-dashed border-texto-3/50 text-texto-3"
+    >
+      <span className="legenda text-[10px] font-semibold uppercase">{item.rotulo}</span>
+      <span className="titulo tabular text-[12px] font-bold">{item.dia}</span>
+      <span className="legenda text-[9px] font-semibold uppercase">feriado</span>
+    </motion.div>
+  );
+}
+
 function Chip({ item, i, x, centro, ativo, onClick }: {
-  item: Item; i: number; x: MotionValue<number>; centro: number; ativo: boolean; onClick: () => void;
+  item: ItemConcurso; i: number; x: MotionValue<number>; centro: number; ativo: boolean; onClick: () => void;
 }) {
   // escala/opacidade contínuas pela distância ao centro — acompanham o dedo 1:1
   const dist = useTransform(x, (v) => Math.min(1, Math.abs(v + i * PASSO - centro) / (PASSO * 3)));
