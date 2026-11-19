@@ -6,6 +6,7 @@ import { Volante } from "./Volante";
 import { JogoRow } from "./JogoRow";
 import { ResumoSheet, type LinhaResumo } from "./ResumoSheet";
 import { Premiacao } from "./Premiacao";
+import { BotaoTema } from "./BotaoTema";
 import type { Status } from "./tipos-ui";
 import { useResultados } from "@/lib/useResultados";
 import { acertos, premiado, valorPremio } from "@/lib/conferir";
@@ -13,6 +14,7 @@ import {
   brParaIso, concursos, dataPrevista, formatarData, hojeSP, horaSP, HORA_SORTEIO, moeda, CONCURSO_INICIAL, DATA_INICIAL,
 } from "@/lib/concursos";
 import { mola, projetar, vibrar } from "@/lib/fisica";
+import { comemorar, pararComemoracao } from "@/lib/comemorar";
 import type { Bilhete, Resultado } from "@/lib/tipos";
 
 type Props = { bilhetes: (Bilhete & { exemplo?: boolean })[] };
@@ -106,9 +108,20 @@ export function Painel({ bilhetes }: Props) {
   const conf = conferencia(r);
   const melhor = r ? Math.max(...conf.map((x) => x.acertos)) : undefined;
   const ganho = conf.reduce((s, x) => s + x.valor, 0);
+  const grandePremio = (melhor ?? 0) >= 14;
   const apurando = conf.filter((x) => x.situacao === "apurando").length;
   const semRateio = conf.some((x) => x.situacao === "fixo" || x.situacao === "apurando");
   const exemplo = bilhetes.some((b) => b.exemplo);
+
+  // 14 ou 15 acertos → confete (uma vez por concurso a cada abertura do app; ao vivo também)
+  const festejado = useRef(new Set<number>());
+  useEffect(() => {
+    if (!grandePremio) return;
+    const t = festejado.current.has(numero) ? undefined
+      : setTimeout(() => { festejado.current.add(numero); comemorar(melhor!); }, 350); // após o card entrar
+    // Saiu do concurso ganhador → confete some na hora
+    return () => { clearTimeout(t); pararComemoracao(); };
+  }, [numero, grandePremio, melhor]);
 
   const itensNav = concursos.map((n) => ({
     numero: n,
@@ -135,6 +148,7 @@ export function Painel({ bilhetes }: Props) {
           {!online ? "offline" : estado?.verificadoEm
             ? `${estado.verificadoFonte ? "verificado" : "falhou"} às ${horaBR(estado.verificadoEm)}`
             : status === "aguardando" ? "ao vivo" : "atualizado"}
+          <BotaoTema />
         </div>
       </header>
 
@@ -182,6 +196,25 @@ export function Painel({ bilhetes }: Props) {
               </div>
 
               <Volante dezenas={r?.dezenas} ordem={r?.ordemSorteio} chave={`${numero}-${r?.dezenas.join()}`} />
+
+              {grandePremio && (
+                <motion.button
+                  type="button"
+                  onClick={() => comemorar(melhor!)}
+                  initial={reduzir ? { opacity: 0 } : { opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={reduzir ? { duration: 0.2 } : { type: "spring", bounce: 0.45, duration: 0.6, delay: 0.3 }}
+                  className="pressionavel relative mt-4 w-full overflow-hidden rounded-2xl bg-gradient-to-br from-ouro to-roxo px-4 py-3 text-left text-white shadow-[0_10px_30px_color-mix(in_srgb,var(--ouro)_35%,transparent)]"
+                >
+                  <span className="brilho pointer-events-none absolute inset-0" aria-hidden />
+                  <p className="display text-[22px] font-bold">{melhor === 15 ? "🏆 GANHAMOS A LOTOFÁCIL!" : "🎉 Fizemos 14 pontos!"}</p>
+                  <p className="text-[13px] text-white/85">
+                    {conf.filter((x) => x.acertos === melhor).length > 1
+                      ? `${conf.filter((x) => x.acertos === melhor).length} jogos com ${melhor} acertos`
+                      : `Um jogo com ${melhor} acertos`} · toque para comemorar de novo
+                  </p>
+                </motion.button>
+              )}
 
               {r ? (
                 <div className="mt-4 grid grid-cols-3 gap-2 text-center">

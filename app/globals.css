@@ -22,8 +22,9 @@
   color-scheme: light;
 }
 
+/* Escuro: segue o sistema, a menos que o usuário force pelo botão (data-theme) */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme="light"]) {
     --roxo: #c64bbb;
     --roxo-claro: #e07ad6;
     --roxo-escuro: #930089;
@@ -41,6 +42,24 @@
     --sombra-forte: 0 2px 6px rgba(0, 0, 0, 0.4), 0 24px 60px rgba(0, 0, 0, 0.5);
     color-scheme: dark;
   }
+}
+:root[data-theme="dark"] {
+  --roxo: #c64bbb;
+  --roxo-claro: #e07ad6;
+  --roxo-escuro: #930089;
+  --roxo-suave: rgba(198, 75, 187, 0.16);
+  --bg: #0e0a12;
+  --bg-elev: #1a1420;
+  --texto: #f6eef8;
+  --texto-2: #b3a6b8;
+  --texto-3: #6f6475;
+  --linha: rgba(255, 255, 255, 0.08);
+  --material: rgba(30, 22, 36, 0.7);
+  --material-borda: rgba(255, 255, 255, 0.08);
+  --bola-neutra: #2a2130;
+  --sombra: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px rgba(0, 0, 0, 0.25);
+  --sombra-forte: 0 2px 6px rgba(0, 0, 0, 0.4), 0 24px 60px rgba(0, 0, 0, 0.5);
+  color-scheme: dark;
 }
 
 @theme inline {

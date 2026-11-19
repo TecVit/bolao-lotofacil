@@ -11,6 +11,7 @@
     "fontes": "node scripts/testar-fontes.mjs"
   },
   "dependencies": {
+    "canvas-confetti": "^1.9.4",
     "firebase": "^13.4.0",
     "firebase-admin": "^14.5.1",
     "motion": "^14.14.0",
@@ -21,6 +22,7 @@
   },
   "devDependencies": {
     "@tailwindcss/turbopack": "4.3.3",
+    "@types/canvas-confetti": "^1.9.0",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
