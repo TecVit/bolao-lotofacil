@@ -21,6 +21,15 @@ export const viewport: Viewport = {
 // Aplica o tema salvo antes da primeira pintura (sem "piscar" no tema errado).
 const scriptTema = `try{var t=localStorage.getItem("tema");if(t==="light"||t==="dark"){document.documentElement.dataset.theme=t;var c=t==="dark"?"#0e0a12":"#f5f2f7";document.addEventListener("DOMContentLoaded",function(){document.querySelectorAll('meta[name="theme-color"]').forEach(function(m){m.content=c})})}}catch(e){}`;
 
+// Trevos grandes e parados no fundo, espalhados e cortados pelas bordas da tela
+const TREVOS_FUNDO = [
+  "-left-20 -top-16 size-64 rotate-[-20deg] text-roxo lg:size-96",
+  "-right-24 top-[30%] size-72 rotate-[25deg] text-[#ff6fb5] lg:top-[22%] lg:size-[26rem]",
+  "-left-28 top-[58%] size-56 rotate-[48deg] text-roxo-claro lg:size-80",
+  "-bottom-20 right-[8%] size-48 rotate-[-35deg] text-roxo lg:size-72",
+  "left-[38%] top-[6%] hidden size-24 rotate-[12deg] text-[#ff6fb5] lg:block",
+];
+
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="pt-BR" className="h-full" suppressHydrationWarning>
@@ -28,11 +37,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <script dangerouslySetInnerHTML={{ __html: scriptTema }} />
       </head>
       <body className="min-h-full">
-        <div className="aurora trevos-fundo" aria-hidden>
-          <Trevo className="-left-24 -top-20 size-72 rotate-[-20deg] text-roxo lg:size-96" />
-          <Trevo className="-right-28 top-[38%] size-80 rotate-[25deg] text-[#ff6fb5] lg:size-[28rem]" />
-          <Trevo className="-bottom-24 -left-16 size-64 rotate-[10deg] text-roxo-claro lg:size-80" />
-          <Trevo className="right-[12%] -bottom-10 hidden size-40 rotate-[-35deg] text-roxo lg:block" />
+        <div className="aurora overflow-hidden" aria-hidden>
+          {TREVOS_FUNDO.map((c, i) => (
+            <Trevo key={i} className={`absolute ${c}`} style={{ opacity: "var(--trevo-fundo, 0.06)" }} />
+          ))}
         </div>
         {children}
       </body>

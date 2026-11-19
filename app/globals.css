@@ -119,11 +119,7 @@ body {
     radial-gradient(60% 40% at 50% -5%, color-mix(in srgb, var(--roxo) 28%, transparent), transparent 70%),
     radial-gradient(40% 30% at 100% 10%, color-mix(in srgb, var(--roxo-claro) 16%, transparent), transparent 70%),
     var(--bg);
-  overflow: hidden;
 }
-
-/* Trevos grandes e parados no fundo, cortados pelas bordas da tela */
-.trevos-fundo > svg { position: absolute; opacity: var(--trevo-fundo); }
 
 .pulso { animation: pulso 1.6s ease-in-out infinite; }
 @keyframes pulso { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: .35; transform: scale(.8); } }
