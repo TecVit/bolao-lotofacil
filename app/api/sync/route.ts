@@ -2,7 +2,11 @@ import { sincronizar } from "@/lib/sync";
 
 export const maxDuration = 30;
 
-/** Chamado pelo cron externo (cron-job.org) — protegido por CRON_SECRET. */
+/**
+ * Chamado pelo cron externo (cron-job.org) — protegido por CRON_SECRET.
+ * Agenda sugerida (fuso America/Sao_Paulo): seg–sex `*\/5 21-23 * * 1-5`,
+ * domingo `*\/5 11-14 * * 0` e uma rede de segurança `0 8,16 * * *`.
+ */
 export async function GET(request: Request) {
   const secret = process.env.CRON_SECRET;
   const auth = request.headers.get("authorization");

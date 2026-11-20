@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import { collection, doc, onSnapshot } from "firebase/firestore";
 import { clientDb } from "./firebase-client";
-import { concursos, dataPrevista, hojeSP, horaSP, jaSorteado, HORA_SORTEIO } from "./concursos";
+import { concursos, dataPrevista, hojeSP, horaSP, jaSorteado, horaSorteio } from "./concursos";
 import type { Estado, Resultado } from "./tipos";
 
 type Dados = { resultados: Map<number, Resultado>; estado: Estado | null; carregando: boolean; online: boolean };
@@ -64,9 +64,10 @@ export function useResultados(): Dados {
     const tick = () => {
       const faltando = concursos.some((n) => jaSorteado(n) && !ref.current.has(n));
       if (!faltando) return;
-      // Sem Firebase: polling a partir das 20h. Com Firebase: o cron grava e o
-      // onSnapshot entrega; só cutucamos a API se passar das 21h30 sem resultado.
-      if (horaSP() < (!usarApi ? HORA_SORTEIO + 1.5 : HORA_SORTEIO) && !atrasado()) return;
+      // Sem Firebase: polling a partir da hora do sorteio (21h; domingo 11h). Com Firebase:
+      // o cron grava e o onSnapshot entrega; só cutucamos a API 1h30 depois sem resultado.
+      const hora = horaSorteio(hojeSP());
+      if (horaSP() < (!usarApi ? hora + 1.5 : hora) && !atrasado()) return;
       buscarApi();
     };
     const id = setInterval(tick, 30_000);

@@ -3,9 +3,23 @@ export const TOTAL_CONCURSOS = Number(process.env.NEXT_PUBLIC_TOTAL_CONCURSOS ??
 export const CONCURSO_FINAL = CONCURSO_INICIAL + TOTAL_CONCURSOS - 1;
 /** Data (yyyy-mm-dd, horário de Brasília) do concurso inicial */
 export const DATA_INICIAL = process.env.NEXT_PUBLIC_DATA_INICIAL ?? "2026-11-16";
-export const HORA_SORTEIO = 20; // 20h de Brasília
+/** Hora (Brasília) do sorteio de seg a sex — 21h desde 03/11/2025. */
+export const HORA_SORTEIO = 21;
+/** Desde 19/07/2026 a Caixa não sorteia aos sábados: o concurso de fim de semana é no domingo, às 11h. */
+export const HORA_SORTEIO_DOMINGO = 11;
 
-/** Feriados nacionais sem sorteio (yyyy-mm-dd). A Lotofácil corre de seg a sáb, exceto nestes dias. */
+/** Dia da semana (0 = domingo) de uma data yyyy-mm-dd. */
+export function diaSemana(iso: string): number {
+  const [y, m, d] = iso.split("-").map(Number);
+  return new Date(Date.UTC(y, m - 1, d, 12)).getUTCDay();
+}
+
+/** Hora do sorteio (Brasília) no dia yyyy-mm-dd. */
+export function horaSorteio(iso: string): number {
+  return diaSemana(iso) === 0 ? HORA_SORTEIO_DOMINGO : HORA_SORTEIO;
+}
+
+/** Feriados nacionais sem sorteio (yyyy-mm-dd). A Lotofácil corre de seg a sex e no domingo, exceto nestes dias. */
 export const FERIADOS: ReadonlySet<string> = new Set([
   "2026-11-20", // Consciência Negra
   "2026-12-25", // Natal
@@ -34,7 +48,7 @@ export function horaSP(agora = new Date()): number {
 }
 
 /**
- * Data prevista (yyyy-mm-dd) de um concurso: seg a sáb, pulando domingos e feriados,
+ * Data prevista (yyyy-mm-dd) de um concurso: seg a sex e domingo, pulando sábados e feriados,
  * contando a partir de um concurso de data conhecida (âncora).
  */
 export function dataPrevista(numero: number, ancoraNum = CONCURSO_INICIAL, ancoraIso = DATA_INICIAL): string {
@@ -44,7 +58,7 @@ export function dataPrevista(numero: number, ancoraNum = CONCURSO_INICIAL, ancor
   const passo = faltam >= 0 ? 1 : -1;
   while (faltam !== 0) {
     dt.setUTCDate(dt.getUTCDate() + passo);
-    if (dt.getUTCDay() !== 0 && !FERIADOS.has(dt.toISOString().slice(0, 10))) faltam -= passo;
+    if (dt.getUTCDay() !== 6 && !FERIADOS.has(dt.toISOString().slice(0, 10))) faltam -= passo;
   }
   return dt.toISOString().slice(0, 10);
 }
@@ -61,11 +75,11 @@ export function formatarData(iso: string, opts: Intl.DateTimeFormatOptions = { w
     .replace(".", "");
 }
 
-/** Concursos que já deveriam ter sido sorteados (data passada, ou hoje após 20h). */
+/** Concursos que já deveriam ter sido sorteados (data passada, ou hoje após a hora do sorteio). */
 export function jaSorteado(numero: number, agora = new Date()): boolean {
   const data = dataPrevista(numero);
   const hoje = hojeSP(agora);
-  return data < hoje || (data === hoje && horaSP(agora) >= HORA_SORTEIO);
+  return data < hoje || (data === hoje && horaSP(agora) >= horaSorteio(data));
 }
 
 export function moeda(v: number) {

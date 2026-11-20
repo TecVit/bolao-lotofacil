@@ -12,7 +12,7 @@ import type { Status } from "./tipos-ui";
 import { useResultados } from "@/lib/useResultados";
 import { acertos, premiado, valorPremio } from "@/lib/conferir";
 import {
-  brParaIso, concursos, dataPrevista, feriadosEntre, formatarData, hojeSP, horaSP, HORA_SORTEIO, moeda, CONCURSO_INICIAL, DATA_INICIAL,
+  brParaIso, concursos, dataPrevista, feriadosEntre, formatarData, hojeSP, horaSP, horaSorteio, moeda, CONCURSO_INICIAL, DATA_INICIAL,
 } from "@/lib/concursos";
 import { mola, projetar, vibrar } from "@/lib/fisica";
 import { comemorar, pararComemoracao } from "@/lib/comemorar";
@@ -42,7 +42,7 @@ export function Painel({ bilhetes }: Props) {
   const statusDe = (n: number): Status => {
     if (resultados.has(n)) return "realizado";
     const d = dataDe(n);
-    if (d === hoje.data) return hoje.hora >= HORA_SORTEIO ? "aguardando" : "hoje";
+    if (d === hoje.data) return hoje.hora >= horaSorteio(d) ? "aguardando" : "hoje";
     return d < hoje.data ? "aguardando" : "futuro";
   };
 
@@ -205,7 +205,7 @@ export function Painel({ bilhetes }: Props) {
                   <h2 className="display tabular text-[28px] font-bold">Concurso {numero}</h2>
                   <p className="text-[12px] text-texto-3">{indice + 1}º de {concursos.length} do bolão</p>
                 </div>
-                <Selo status={status} />
+                <Selo status={status} horaSorteio={horaSorteio(dataDe(numero))} />
               </div>
 
               <Volante dezenas={r?.dezenas} ordem={r?.ordemSorteio} chave={`${numero}-${r?.dezenas.join()}`} />
@@ -237,7 +237,7 @@ export function Painel({ bilhetes }: Props) {
                     rotulo={apurando ? "ganho + a apurar" : "ganho"} />
                 </div>
               ) : (
-                <Espera status={status} numero={numero} estado={estado} hora={hoje.hora} />
+                <Espera status={status} numero={numero} estado={estado} hora={hoje.hora} horaSorteio={horaSorteio(dataDe(numero))} />
               )}
               {r && semRateio && (
                 <p className="mt-2 flex items-start gap-1.5 rounded-xl bg-ouro/15 px-3 py-2 text-[12px] text-texto-2">
@@ -330,10 +330,10 @@ function quandoBR(ts: number) {
   return mesmoDia ? `hoje às ${fmtHora.format(ts)}` : `em ${fmtDia.format(ts)} às ${fmtHora.format(ts)}`;
 }
 
-function Selo({ status }: { status: Status }) {
+function Selo({ status, horaSorteio }: { status: Status; horaSorteio: number }) {
   const m = {
     realizado: ["Realizado", "bg-roxo-suave text-roxo"],
-    hoje: ["Hoje às 20h", "bg-roxo text-white"],
+    hoje: [`Hoje às ${horaSorteio}h`, "bg-roxo text-white"],
     aguardando: ["Sorteando", "bg-ouro/20 text-texto"],
     futuro: ["Em breve", "bg-bola text-texto-2"],
   }[status];
@@ -354,20 +354,20 @@ function Mini({ valor, rotulo, destaque }: { valor: string; rotulo: string; dest
   );
 }
 
-function Espera({ status, numero, estado, hora }: {
-  status: Status; numero: number; estado: ReturnType<typeof useResultados>["estado"]; hora: number;
+function Espera({ status, numero, estado, hora, horaSorteio }: {
+  status: Status; numero: number; estado: ReturnType<typeof useResultados>["estado"]; hora: number; horaSorteio: number;
 }) {
   const estimativa = estado?.proximo === numero ? estado.estimativaProximo : 0;
   let titulo = "Aguardando o sorteio";
   let sub = "";
   if (status === "hoje") {
-    const falta = Math.max(0, HORA_SORTEIO - hora);
+    const falta = Math.max(0, horaSorteio - hora);
     const h = Math.floor(falta), m = Math.round((falta - h) * 60);
     titulo = `Sorteio em ${h ? `${h}h ` : ""}${m}min`;
     sub = "O resultado aparece aqui sozinho, assim que a Caixa publicar.";
   } else if (status === "aguardando") {
     titulo = "Sorteio realizado, buscando resultado…";
-    sub = "Costuma sair entre 20h30 e 21h30. Esta tela atualiza sozinha.";
+    sub = `Costuma sair entre ${horaSorteio}h30 e ${horaSorteio + 1}h30. Esta tela atualiza sozinha.`;
   } else {
     titulo = "Concurso futuro";
     sub = "Os 15 jogos já estão concorrendo.";
